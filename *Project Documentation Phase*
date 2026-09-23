@@ -1,1 +1,43 @@
+Here is a structured framework and technical outline for the **Project Documentation Phase** of the [LegalEase-AI-Powered-Legal-Document-Generator](https://github.com/divyasrins2007-ux/LegalEase-AI-Powered-Legal-Document-Generator?utm_source=gemini):
 
+---
+
+## 1. Scope of Documentation
+
+The documentation phase provides comprehensive technical guides, user instructions, and compliance standards necessary for developers, legal stakeholders, and end users to deploy, maintain, and interact with the platform.
+
+---
+
+## 2. Technical & Developer Documentation
+
+### System Architecture & API Reference
+
+* **Architecture Overview:** High-level diagrams mapping interaction between the Next.js frontend, FastAPI backend, vector database (if applicable), and LLM API orchestrator.
+* **API Endpoints:** Detailed OpenAPI (Swagger) specifications detailing endpoints, request payloads, response objects, authentication header requirements, and error codes:
+* `POST /api/v1/generate`: Document generation schema and response formatting.
+* `POST /api/v1/edit-clause`: Prompt syntax rules for real-time document modifications.
+* `GET /api/v1/templates`: JSON response mapping available legal templates and input requirements.
+
+
+
+### Setup & Local Development Guide
+
+* **Prerequisites:** Node.js version requirements, Python environment setup, database dependencies (PostgreSQL / Supabase), and LLM API keys (OpenAI / Anthropic).
+* **Installation & Deployment Steps:** Standard commands for cloning, environment configuration (`.env.example`), database migrations, and local server startup (`npm run dev` / `uvicorn main:app`).
+
+---
+
+## 3. Legal Compliance & Risk Disclaimers
+
+### Disclaimer Framework
+
+* **Not Legal Advice (UPL Compliance):** Explicit UI banner and document watermark documentation stating that the software provides automated templates and AI assistance, but does not constitute formal legal counsel or practice of law.
+* **Data Privacy & Security:** Standards documentation covering data encryption in transit (TLS 1.3) and at rest (AES-256), handling of Personally Identifiable Information (PII), and policy detailing that user inputs are not used to train third-party public AI models.
+
+---
+
+## 4. End-User Documentation & User Guides
+
+* **Getting Started Guide:** Step-by-step walkthrough covering account setup, template selection, and dynamic questionnaire completion.
+* **Prompting & Interactive Edits:** Examples of effective natural language instructions for modifying contract clauses (e.g., *"Change notice period for termination from 14 days to 30 days"*).
+* **Exporting & Version Control:** Instructions on downloading finalized contracts in `.docx` and `.pdf` formats and accessing prior saved drafts from the user dashboard.
