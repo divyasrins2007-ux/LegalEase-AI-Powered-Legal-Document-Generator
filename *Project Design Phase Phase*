@@ -1,1 +1,67 @@
+Here is a structured overview and design specification for the **Project Design Phase** of the [LegalEase-AI-Powered-Legal-Document-Generator](https://github.com/divyasrins2007-ux/LegalEase-AI-Powered-Legal-Document-Generator?utm_source=gemini):
 
+---
+
+## 1. System Architecture & High-Level Design
+
+### Core Components
+
+* **Frontend UI Client:** Next.js / React single-page application handling dynamic form rendering, live document previews, and real-time chat interactions with AI.
+* **Backend API Layer:** FastAPI / Node.js service managing authentication, workflow orchestration, database queries, and document processing jobs.
+* **AI Orchestration Engine:** Integrates with LLM APIs (OpenAI / Anthropic) for prompt handling, structured variable extraction, risk analysis, and dynamic document modifications.
+* **Document Rendering Engine:** Engine converting dynamic JSON structures or Markdown templates into populated `.docx` and `.pdf` files.
+* **Database & Storage:** PostgreSQL / Supabase for user state, session persistence, template storage, and document metadata; S3-compatible storage for generated document files.
+
+---
+
+## 2. User Interface (UI) & User Experience (UX) Design
+
+### Wireframe Layout & Workflows
+
+* **Dashboard:** Shows document history, saved drafts, template library, and quick-start actions.
+* **Dynamic Questionnaire Interface:** Step-by-step form wizard featuring real-time input validation, contextual help tooltips, and dynamic logic branching (showing conditional inputs based on previous selections).
+* **Split-View Document Editor:**
+* *Left Panel:* Conversational AI prompt interface & structured form controls for dynamic edits.
+* *Right Panel:* Live visual document preview with highlighted changes and plain-English risk flag annotations.
+
+
+* **Export & Share Modal:** Download choices (`.docx`, `.pdf`) alongside permission/sharing settings.
+
+---
+
+## 3. Database Schema & Data Modeling
+
+### Core Entities
+
+* **Users:** `id`, `email`, `name`, `role`, `created_at`
+* **Templates:** `id`, `title`, `category`, `base_content`, `variable_schema` (JSON definition of inputs required)
+* **Documents:** `id`, `user_id`, `template_id`, `form_data` (JSON), `generated_content`, `status`, `created_at`
+* **Audit Trail / Revision History:** `id`, `document_id`, `prompt_history`, `version_number`, `created_at`
+
+---
+
+## 4. API & Data Flow Design
+
+```
+[ User Input / Prompt ] ---> [ Next.js Frontend ] 
+                                  |
+                                  v
+                         [ FastAPI Backend ]
+                           /            \
+                          v              v
+            [ Database / Storage ]   [ LLM Engine / Prompt Pipeline ]
+                          \              /
+                           v            v
+                    [ Generated Document Draft ]
+                                  |
+                                  v
+                   [ Render Engine (.docx / .pdf) ]
+
+```
+
+### Key API Endpoints
+
+* `POST /api/templates`: Fetch templates and variable schema for a given legal document type.
+* `POST /api/documents/generate`: Accept user responses, process via LLM template engine, and return generated draft.
+* `POST /api/documents/edit-clause`: Process natural language revision prompts to adjust specific clauses in the draft.
+* `GET /api/documents/{id}/export?format=pdf|docx`: Generate downloadable file payload.
