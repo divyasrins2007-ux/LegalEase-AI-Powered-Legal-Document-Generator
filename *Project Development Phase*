@@ -1,1 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LegalEase - AI Legal Document Generator</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #f4f6f9; margin: 0; padding: 20px; }
+        .container { max-width: 1100px; margin: auto; display: flex; gap: 20px; }
+        .form-section, .output-section { background: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); flex: 1; }
+        h2 { margin-top: 0; color: #1a252f; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: 600; margin-bottom: 5px; color: #333; }
+        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 14px; }
+        textarea { height: 100px; resize: vertical; }
+        button { width: 100%; padding: 12px; background-color: #0056b3; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 16px; }
+        button:hover { background-color: #004085; }
+        .document-preview { background: #fafafa; border: 1px solid #ddd; padding: 20px; border-radius: 5px; min-height: 400px; overflow-y: auto; font-family: 'Georgia', serif; line-height: 1.6; }
+    </style>
+</head>
+<body>
 
+<div class="container">
+    <!-- Input Form -->
+    <div class="form-section">
+        <h2>LegalEase Generator</h2>
+        <form id="docForm">
+            <div class="form-group">
+                <label for="doc_type">Document Type</label>
+                <select id="doc_type" required>
+                    <option value="">Select Document Type</option>
+                    <option value="Non-Disclosure Agreement (NDA)">Non-Disclosure Agreement (NDA)</option>
+                    <option value="Employment Contract">Employment Contract</option>
+                    <option value="Freelance Service Agreement">Freelance Service Agreement</option>
+                    <option value="Residential Lease Agreement">Residential Lease Agreement</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="party_a">Party A (e.g., Company / Disclosing Party / Landlord)</label>
+                <input type="text" id="party_a" placeholder="Acme Corp LLC" required>
+            </div>
+            <div class="form-group">
+                <label for="party_b">Party B (e.g., Employee / Receiving Party / Tenant)</label>
+                <input type="text" id="party_b" placeholder="John Doe" required>
+            </div>
+            <div class="form-group">
+                <label for="details">Key Terms / Specific Clauses</label>
+                <textarea id="details" placeholder="e.g., Duration: 12 months, Payment: $5,000/month, Governing Law: California"></textarea>
+            </div>
+            <button type="submit" id="generateBtn">Generate Document</button>
+        </form>
+    </div>
+
+    <!-- Generated Document View -->
+    <div class="output-section">
+        <h2>Generated Document</h2>
+        <div class="document-preview" id="docOutput">
+            <p style="color: #777;">Fill in the form and click "Generate Document" to view the generated legal draft here.</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById("docForm").addEventListener("submit", async function (e) {
+        e.preventDefault();
+        
+        const docOutput = document.getElementById("docOutput");
+        const btn = document.getElementById("generateBtn");
+        
+        docOutput.innerHTML = "<p><em>Generating legal document, please wait...</em></p>";
+        btn.disabled = true;
+
+        const payload = {
+            doc_type: document.getElementById("doc_type").value,
+            party_a: document.getElementById("party_a").value,
+            party_b: document.getElementById("party_b").value,
+            details: document.getElementById("details").value
+        };
+
+        try {
+            const response = await fetch("/generate", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                docOutput.innerHTML = marked.parse(data.document);
+            } else {
+                docOutput.innerHTML = `<p style="color:red;">Error: ${data.error}</p>`;
+            }
+        } catch (err) {
+            docOutput.innerHTML = `<p style="color:red;">Failed to connect to the backend server.</p>`;
+        } finally {
+            btn.disabled = false;
+        }
+    });
+</script>
+
+</body>
+</html>
