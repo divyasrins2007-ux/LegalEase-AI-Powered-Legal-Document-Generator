@@ -1,1 +1,61 @@
+import pytest
+import re
 
+# Example mock function representing your legal document generator
+def generate_legal_document(doc_type: str, party_a: str, party_b: str, terms: str) -> str:
+    if not party_a or not party_b:
+        raise ValueError("Party details cannot be empty.")
+    
+    if doc_type == "NDA":
+        return f"""NON-DISCLOSURE AGREEMENT
+
+This Non-Disclosure Agreement ("Agreement") is entered into by and between {party_a} ("Disclosing Party") and {party_b} ("Receiving Party").
+
+1. Confidentiality: The Receiving Party agrees to protect confidential information.
+2. Term: Effective upon signing for a duration of {terms}.
+
+In witness whereof, the parties have executed this Agreement.
+Signature: ___________________ ({party_a})
+Signature: ___________________ ({party_b})
+"""
+    else:
+        raise ValueError("Unsupported Document Type")
+
+
+# ==========================================
+# TEST CASES
+# ==========================================
+
+def test_nda_generation_success():
+    """Test standard NDA generation with valid inputs."""
+    doc_type = "NDA"
+    party_a = "Alpha Corp"
+    party_b = "Beta Solutions"
+    terms = "2 years"
+
+    result = generate_legal_document(doc_type, party_a, party_b, terms)
+
+    # Assertions
+    assert "NON-DISCLOSURE AGREEMENT" in result
+    assert "Alpha Corp" in result
+    assert "Beta Solutions" in result
+    assert "2 years" in result
+
+def test_missing_party_information():
+    """Test error handling when party names are omitted."""
+    with pytest.raises(ValueError, match="Party details cannot be empty."):
+        generate_legal_document("NDA", "", "Beta Corp", "1 year")
+
+def test_legal_clause_integrity():
+    """Ensure required legal sections and signature blocks exist."""
+    result = generate_legal_document("NDA", "Alice", "Bob", "1 year")
+    
+    # Check for crucial structural elements
+    assert re.search(r"1\.\s*Confidentiality", result) is not None
+    assert "In witness whereof" in result
+    assert "Signature:" in result
+
+def test_unsupported_document_type():
+    """Test error handling for unsupported document types."""
+    with pytest.raises(ValueError, match="Unsupported Document Type"):
+        generate_legal_document("UnknownDoc", "Alice", "Bob", "1 year")
