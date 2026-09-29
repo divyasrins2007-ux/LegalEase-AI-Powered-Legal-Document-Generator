@@ -1,1 +1,98 @@
+import unittest
+from unittest.mock import MagicMock, patch
 
+# ==========================================
+# Mock Module Implementation (Target Code)
+# ==========================================
+
+class LegalDocumentGenerator:
+    """Core class responsible for generating legal documents using an AI model."""
+    
+    def __init__(self, api_client):
+        self.api_client = api_client
+
+    def validate_inputs(self, doc_type: str, details: dict) -> bool:
+        """Validates required input fields based on document type."""
+        if not doc_type or not isinstance(details, dict):
+            return False
+        
+        required_fields = {
+            "NDA": ["disclosing_party", "receiving_party", "jurisdiction"],
+            "Rental Agreement": ["landlord", "tenant", "rent_amount"],
+        }
+        
+        fields = required_fields.get(doc_type, [])
+        return all(field in details and details[field] for field in fields)
+
+    def generate_document(self, doc_type: str, details: dict) -> str:
+        """Constructs prompt and calls the AI API to generate a legal document."""
+        if not self.validate_inputs(doc_type, details):
+            raise ValueError("Invalid or missing required details for document generation.")
+            
+        prompt = f"Generate a legally binding {doc_type} with details: {details}"
+        response = self.api_client.generate(prompt)
+        
+        if not response or "text" not in response:
+            raise RuntimeError("Failed to receive a valid response from the AI model.")
+            
+        return response["text"]
+
+
+# ==========================================
+# Unit & Integration Tests (Testing Phase)
+# ==========================================
+
+class TestLegalDocumentGenerator(unittest.TestCase):
+
+    def setUp(self):
+        """Set up test fixtures before each test method execution."""
+        self.mock_api_client = MagicMock()
+        self.generator = LegalDocumentGenerator(api_client=self.mock_api_client)
+        self.valid_nda_details = {
+            "disclosing_party": "Acme Corp",
+            "receiving_party": "Jane Doe",
+            "jurisdiction": "California"
+        }
+
+    def test_validate_inputs_success(self):
+        """Test input validation passes with valid details."""
+        is_valid = self.generator.validate_inputs("NDA", self.valid_nda_details)
+        self.assertTrue(is_valid)
+
+    def test_validate_inputs_missing_field(self):
+        """Test input validation fails when a required field is missing."""
+        invalid_details = {"disclosing_party": "Acme Corp"}
+        is_valid = self.generator.validate_inputs("NDA", invalid_details)
+        self.assertFalse(is_valid)
+
+    def test_generate_document_success(self):
+        """Test successful document generation when AI API responds properly."""
+        # Mock API response
+        self.mock_api_client.generate.return_value = {
+            "text": "NON-DISCLOSURE AGREEMENT\nThis agreement is made between Acme Corp and Jane Doe..."
+        }
+
+        result = self.generator.generate_document("NDA", self.valid_nda_details)
+
+        # Assertions
+        self.assertIn("NON-DISCLOSURE AGREEMENT", result)
+        self.mock_api_client.generate.assert_called_once()
+
+    def test_generate_document_invalid_inputs_raises_error(self):
+        """Test that passing invalid inputs raises a ValueError before calling the API."""
+        with self.assertRaises(ValueError):
+            self.generator.generate_document("NDA", {})
+
+        # Ensure API client was never called due to early failure
+        self.mock_api_client.generate.assert_not_called()
+
+    def test_generate_document_api_failure(self):
+        """Test error handling when the AI API returns an unexpected or empty response."""
+        self.mock_api_client.generate.return_value = None
+
+        with self.assertRaises(RuntimeError):
+            self.generator.generate_document("NDA", self.valid_nda_details)
+
+
+if __name__ == "__main__":
+    unittest.main()
