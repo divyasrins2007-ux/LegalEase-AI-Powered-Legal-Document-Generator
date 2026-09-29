@@ -1,1 +1,27 @@
+import os
+from datetime import datetime
 
+class ProjectDocumentationGenerator:
+    """
+    Automates the generation and compilation of documentation for 
+    LegalEase: AI-Powered Legal Document Generator.
+    """
+    
+    def __init__(self, project_name="LegalEase - AI-Powered Legal Document Generator"):
+        self.project_name = project_name
+        self.generated_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    def generate_system_architecture_doc(self) -> str:
+        """Generates documentation for the system architecture."""
+        return f"""# {self.project_name} - System Architecture
+
+**Generated Date:** {self.generated_date}
+
+## 1. Overview
+LegalEase uses Large Language Models (LLMs) and custom prompt templates to generate legally compliant documents (e.g., NDAs, Service Agreements, Employment Contracts) based on user inputs.
+
+## 2. Architecture Diagram & Workflow
+1. **Frontend Interface:** Web-based form built using Streamlit / React for user inputs.
+2. **Backend Engine:** FastAPI / Flask server handling request processing and prompt engineering.
+3. **AI/LLM Layer:** OpenAI GPT API / Open-Source LLM (Hugging Face / LangChain) generating document templates.
+4. **Export & Storage Engine:** Converts raw text to PDF/DOCX formats and stores user templates securely.
