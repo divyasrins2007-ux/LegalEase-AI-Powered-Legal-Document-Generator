@@ -1,1 +1,165 @@
+import os
+import io
+from datetime import datetime
+from dotenv import load_dotenv
+import streamlit as st
+import docx
+from jinja2 import Template
+from openai import OpenAI
 
+# Load environment variables
+load_dotenv()
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+# Set page layout
+st.set_page_config(
+    page_title="LegalEase - AI Legal Document Generator",
+    page_icon="⚖️",
+    layout="wide"
+)
+
+# ---------------------------------------------------------
+# Core Helper Functions
+# ---------------------------------------------------------
+
+def generate_ai_clause(prompt_details: str, clause_type: str) -> str:
+    """Uses OpenAI API to draft custom legal clauses based on user inputs."""
+    prompt = (
+        f"You are an expert legal assistant. Draft a concise, legally robust {clause_type} "
+        f"clause for an agreement with the following specific requirements:\n{prompt_details}"
+    )
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You are a professional legal drafting assistant."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.3
+        )
+        return response.choices[0].message.content.strip()
+    except Exception as e:
+        return f"Error generating clause: {str(e)}"
+
+
+def create_docx_document(title: str, details: dict, ai_clause: str = "") -> bytes:
+    """Generates a downloadable .docx document."""
+    doc = docx.Document()
+    
+    # Header / Title
+    heading = doc.add_heading(title, level=0)
+    heading.alignment = docx.enum.text.WD_ALIGN_PARAGRAPH.CENTER
+    doc.add_paragraph(f"Date: {datetime.now().strftime('%B %d, %Y')}\n")
+    
+    # General Parties Information
+    doc.add_heading("1. Parties", level=1)
+    doc.add_paragraph(f"This agreement is made between {details.get('party_a', 'Party A')} "
+                      f"and {details.get('party_b', 'Party B')}.")
+    
+    # Primary Terms
+    doc.add_heading("2. Key Terms & Obligations", level=1)
+    for key, value in details.get("terms", {}).items():
+        p = doc.add_paragraph()
+        p.add_run(f"{key}: ").bold = True
+        p.add_run(str(value))
+        
+    # Custom AI Generated Clause
+    if ai_clause:
+        doc.add_heading("3. Special / AI-Drafted Clauses", level=1)
+        doc.add_paragraph(ai_clause)
+
+    # Signatures Section
+    doc.add_heading("4. Signatures", level=1)
+    doc.add_paragraph("\n\n___________________________               ___________________________")
+    doc.add_paragraph(f"Signature ({details.get('party_a', 'Party A')})                 Signature ({details.get('party_b', 'Party B')})")
+
+    # Save to memory buffer
+    buffer = io.BytesIO()
+    doc.save(buffer)
+    buffer.seek(0)
+    return buffer.getvalue()
+
+
+# ---------------------------------------------------------
+# User Interface (Streamlit)
+# ---------------------------------------------------------
+
+st.title("⚖️ LegalEase: AI-Powered Legal Document Generator")
+st.markdown("Automate legal document generation with AI-enhanced clause customization.")
+
+# Sidebar navigation
+doc_type = st.sidebar.selectbox(
+    "Select Document Type",
+    ["Non-Disclosure Agreement (NDA)", "Freelance Contract", "Custom Agreement"]
+)
+
+st.header(f"Drafting: {doc_type}")
+
+# Form Inputs
+with st.form("doc_generation_form"):
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        party_a = st.text_input("First Party Name (e.g., Company / Client)", "Acme Corp")
+        effective_date = st.date_input("Effective Date")
+        
+    with col2:
+        party_b = st.text_input("Second Party Name (e.g., Contractor / Receiving Party)", "John Doe")
+        jurisdiction = st.text_input("Governing Law / Jurisdiction", "California, USA")
+
+    st.subheader("Document Specifics")
+    if doc_type == "Non-Disclosure Agreement (NDA)":
+        duration = st.selectbox("Confidentiality Duration", ["1 Year", "2 Years", "5 Years", "Indefinite"])
+        purpose = st.text_area("Purpose of Disclosure", "Exploring potential business collaboration.")
+        terms_data = {"Duration": duration, "Purpose": purpose, "Jurisdiction": jurisdiction}
+
+    elif doc_type == "Freelance Contract":
+        scope = st.text_area("Scope of Work", "Development of web application and API integrations.")
+        payment = st.text_input("Payment Amount & Schedule", "$5,000 upon project completion")
+        terms_data = {"Scope of Work": scope, "Payment Terms": payment, "Jurisdiction": jurisdiction}
+
+    else:
+        custom_terms = st.text_area("Key Terms", "Outline key terms here...")
+        terms_data = {"Key Terms": custom_terms, "Jurisdiction": jurisdiction}
+
+    # Custom AI Clause prompt input
+    st.subheader("AI Clause Customization")
+    custom_clause_prompt = st.text_area(
+        "Describe any special condition or non-standard clause you want AI to generate:",
+        placeholder="e.g., Include a strict non-compete clause for 12 months in the software industry."
+    )
+
+    submitted = st.form_submit_button("Generate Document")
+
+# ---------------------------------------------------------
+# Generation & Download Output
+# ---------------------------------------------------------
+
+if submitted:
+    ai_generated_clause = ""
+    if custom_clause_prompt.strip():
+        with st.spinner("Generating custom AI clause..."):
+            ai_generated_clause = generate_ai_clause(custom_clause_prompt, doc_type)
+            st.success("Custom clause generated!")
+            st.markdown("### Preview of AI Clause:")
+            st.info(ai_generated_clause)
+
+    # Document details dict
+    details = {
+        "party_a": party_a,
+        "party_b": party_b,
+        "terms": terms_data
+    }
+
+    # Generate document bytes
+    docx_file = create_docx_document(doc_type, details, ai_generated_clause)
+
+    st.success("Document draft generated successfully!")
+
+    # Download Button
+    st.download_button(
+        label="📥 Download Legal Document (.docx)",
+        data=docx_file,
+        file_name=f"{doc_type.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d')}.docx",
+        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    )
